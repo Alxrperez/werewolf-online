@@ -1,0 +1,30 @@
+{
+  "name": "werewolf-online",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=packages/server\" \"npm run dev --workspace=packages/client\"",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/server && npm run build --workspace=packages/client",
+    "test": "npm run test --workspace=packages/shared && npm run test --workspace=packages/server",
+    "test:e2e": "playwright test",
+    "test:load": "k6 run tests/load/k6-script.js",
+    "typecheck": "npm run typecheck --workspace=packages/shared && npm run typecheck --workspace=packages/server && npm run typecheck --workspace=packages/client",
+    "lint": "eslint packages/*/src --ext .ts,.tsx"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0"
+  }
+}

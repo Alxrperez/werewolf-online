@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Werewolf Online — real-time social deduction game" />
+    <title>Werewolf Online</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐺</text></svg>" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body, #root { height: 100%; }
+      body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: #0a0a0f;
+        color: #e8e8f0;
+        -webkit-font-smoothing: antialiased;
+        /* Disable tap highlight on mobile */
+        -webkit-tap-highlight-color: transparent;
+        /* Prevent text selection on UI elements */
+        -webkit-touch-callout: none;
+      }
+      /* Remove 300ms tap delay on mobile */
+      button, a, [role="button"] { touch-action: manipulation; }
+      /* Ensure no horizontal scroll on any screen */
+      body { overflow-x: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

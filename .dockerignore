@@ -1,0 +1,26 @@
+# Dependencies — reinstalled inside Docker
+node_modules
+packages/*/node_modules
+
+# Build outputs — rebuilt inside Docker
+packages/*/dist
+packages/client/dist
+
+# Dev / test artefacts
+.env
+.env.*
+*.log
+coverage
+.nyc_output
+
+# Git / IDE
+.git
+.gitignore
+.vscode
+.idea
+*.md
+
+# Docker files themselves (avoid COPY bloat)
+Dockerfile*
+docker-compose*.yml
+nginx.conf

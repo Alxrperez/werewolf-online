@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  # ─── Node.js game server ─────────────────────────────────────────────────────
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - BASE_URL=${BASE_URL:-http://localhost}
+      - SESSION_TTL_MINUTES=${SESSION_TTL_MINUTES:-120}
+      - MAX_PLAYERS_PER_SESSION=${MAX_PLAYERS_PER_SESSION:-20}
+      - MAX_SESSIONS=${MAX_SESSIONS:-200}
+    expose:
+      - "3000"
+    networks:
+      - werewolf_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ─── Nginx: static client + reverse proxy ────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    restart: unless-stopped
+    ports:
+      - "${PORT:-80}:80"
+    networks:
+      - werewolf_net
+    depends_on:
+      server:
+        condition: service_healthy
+
+networks:
+  werewolf_net:
+    driver: bridge
