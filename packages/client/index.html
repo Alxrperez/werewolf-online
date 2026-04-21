@@ -2,27 +2,115 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Werewolf Online — real-time social deduction game" />
+    <meta name="theme-color" content="#121212" />
+    <meta name="color-scheme" content="dark" />
     <title>Werewolf Online</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐺</text></svg>" />
+
+    <!-- Poppins (geometric sans) — 400/500/600/700/800 for the modular scale. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+    />
+
     <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body, #root { height: 100%; }
-      body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: #0a0a0f;
-        color: #e8e8f0;
-        -webkit-font-smoothing: antialiased;
-        /* Disable tap highlight on mobile */
-        -webkit-tap-highlight-color: transparent;
-        /* Prevent text selection on UI elements */
-        -webkit-touch-callout: none;
+      /* ─── Reset ──────────────────────────────────────────────────────── */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-      /* Remove 300ms tap delay on mobile */
-      button, a, [role="button"] { touch-action: manipulation; }
-      /* Ensure no horizontal scroll on any screen */
-      body { overflow-x: hidden; }
+      html, body, #root { height: 100%; }
+
+      /* ─── Base ───────────────────────────────────────────────────────── */
+      body {
+        font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        color: #E0E0E0;
+        background: #121212;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        overflow-x: hidden;
+        /* iOS safe-area aware */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+
+      /* Headings lose browser defaults; components control their own size. */
+      h1, h2, h3, h4, h5, h6 {
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      /* ─── Form controls — neutral defaults ───────────────────────────── */
+      button, input, textarea, select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        touch-action: manipulation;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      [role="button"]:focus-visible {
+        outline: 2px solid #A0C4FF;
+        outline-offset: 2px;
+      }
+      /* Chrome/Safari autofill on our dark inputs */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus {
+        -webkit-text-fill-color: #E0E0E0;
+        -webkit-box-shadow: 0 0 0 100px #1E1E1E inset;
+        caret-color: #E0E0E0;
+      }
+
+      /* ─── Scrollbars — match dark surface ────────────────────────────── */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: #333333;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: #555555; }
+
+      /* ─── Selection ──────────────────────────────────────────────────── */
+      ::selection {
+        background: rgba(178, 34, 34, 0.4);
+        color: #FFFFFF;
+      }
+
+      /* ─── Motion preference ──────────────────────────────────────────── */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* ─── Desktop-only premium grain overlay ─────────────────────────── */
+      @media (min-width: 1024px) {
+        body::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0.025;
+          background-image: url("/assets/design-system/images/backgrounds/bg-texture-darkgrain.png");
+          background-repeat: repeat;
+          mix-blend-mode: overlay;
+        }
+      }
     </style>
   </head>
   <body>

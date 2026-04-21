@@ -3,6 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server as IOServer } from "socket.io";
 import cors from "cors";
+import path from "path";
 import {
   getAllSessions,
   destroySession,
@@ -21,9 +22,11 @@ import {
 const PORT = parseInt(process.env["PORT"] ?? "3000", 10);
 const IS_DEV = process.env["NODE_ENV"] !== "production";
 // In dev, allow any localhost origin (Vite may start on 5173, 5174, 5175, etc.)
-const CORS_ORIGIN: string | RegExp = IS_DEV
+// In prod single-container mode, client is served from same origin — CORS_ORIGIN
+// defaults to true (reflect request origin) so the app works on any Fly hostname.
+const CORS_ORIGIN: string | RegExp | boolean = IS_DEV
   ? /^http:\/\/localhost:\d+$/
-  : (process.env["CORS_ORIGIN"] ?? "http://localhost:5173");
+  : (process.env["CORS_ORIGIN"] ?? true);
 const BASE_URL = process.env["BASE_URL"] ?? `http://localhost:${PORT}`;
 const MAX_SESSIONS = parseInt(process.env["MAX_SESSIONS"] ?? "200", 10);
 
@@ -45,6 +48,22 @@ const io = new IOServer(httpServer, {
 
 registerSocketHandlers(io);
 registerRoutes(app, BASE_URL);
+
+// ─── Serve built client (production only) ─────────────────────────────────────
+// In single-container deployments (Fly.io), the server also serves the Vite-built
+// static client from ../../client/dist. In dev, Vite handles this on port 5173.
+if (!IS_DEV) {
+  // CommonJS build — __dirname is available at runtime.
+  // packages/server/dist/index.js → packages/client/dist
+  const clientDist = path.resolve(__dirname, "../../client/dist");
+
+  app.use(express.static(clientDist));
+
+  // SPA fallback: any non-API/socket.io route returns index.html
+  app.get(/^(?!\/api|\/socket\.io|\/ping).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 // ─── Session cleanup sweep ────────────────────────────────────────────────────
 

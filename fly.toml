@@ -1,0 +1,45 @@
+# fly.toml — Werewolf Online
+# Fly.io deployment config for the single-container build (server + static client).
+# Docs: https://fly.io/docs/reference/configuration/
+
+app = "werewolf-online"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
+  # HTTP health check hits the /ping endpoint the server exposes.
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/ping"
+
+# Keep Socket.IO (WebSocket) sticky — a session's state lives in one machine's
+# memory, so all of that session's connections must land on the same machine.
+# With a single min machine this is automatic; when scaling horizontally,
+# consider adding `[services] ... [[services.tcp_checks]]` with sticky sessions
+# or moving session state to Redis.
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

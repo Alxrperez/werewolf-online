@@ -14,12 +14,9 @@ RUN npm ci --ignore-scripts
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# npm workspaces hoists all deps to the root node_modules — no per-package copies needed.
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/packages/server/node_modules ./packages/server/node_modules
-COPY --from=deps /app/packages/client/node_modules ./packages/client/node_modules
-
-COPY tsconfig.base.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY packages/server ./packages/server
 COPY packages/client ./packages/client

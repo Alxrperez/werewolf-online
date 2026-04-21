@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useGameStore } from "../stores/gameStore.js";
+import { color, font, space, radius, shadow, layout } from "../design/tokens.js";
 
 interface HomeScreenProps {
   onJoined: () => void;
@@ -93,17 +94,20 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
 
   return (
     <div style={styles.container}>
+      {/* Atmospheric moon vignette — desktop only, sits behind card. */}
+      <div aria-hidden style={styles.vignette} />
+
       <motion.div
-        initial={{ opacity: 0, y: -30 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={styles.card}
       >
-        <div style={styles.logo}>
+        <header style={styles.logo}>
           <span style={styles.logoIcon}>🐺</span>
           <h1 style={styles.title}>Werewolf Online</h1>
           <p style={styles.subtitle}>Social deduction for 6–20 players</p>
-        </div>
+        </header>
 
         {mode === "home" && (
           <motion.div
@@ -122,7 +126,7 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
 
         {mode === "create" && (
           <motion.form
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             onSubmit={handleCreate}
             style={styles.form}
@@ -133,7 +137,7 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
               name="playerName"
               style={styles.input}
               type="text"
-              placeholder="Enter your name..."
+              placeholder="Enter your name…"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={16}
@@ -141,13 +145,13 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
               autoComplete="nickname"
               autoFocus
             />
-            {/* Advanced phase timers */}
             <button
               type="button"
               style={styles.btnGhost}
               onClick={() => setShowAdvanced((v) => !v)}
+              aria-expanded={showAdvanced}
             >
-              {showAdvanced ? "▲ Hide" : "▼ Phase Timers"}
+              {showAdvanced ? "▲ Hide phase timers" : "▼ Phase timers"}
             </button>
             {showAdvanced && (
               <div style={styles.advancedBox}>
@@ -158,17 +162,17 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
             )}
             {error && <p style={styles.error}>{error}</p>}
             <button style={styles.btnPrimary} type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Room"}
+              {loading ? "Creating…" : "Create Room"}
             </button>
             <button style={styles.btnGhost} type="button" onClick={() => { setMode("home"); setError(null); }}>
-              Back
+              ← Back
             </button>
           </motion.form>
         )}
 
         {mode === "join" && (
           <motion.form
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             onSubmit={handleJoin}
             style={styles.form}
@@ -177,7 +181,7 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
             <input
               id="join-code"
               name="roomCode"
-              style={{ ...styles.input, textTransform: "uppercase", letterSpacing: "0.2em", textAlign: "center" }}
+              style={{ ...styles.input, textTransform: "uppercase", letterSpacing: "0.25em", textAlign: "center", fontWeight: 700 }}
               type="text"
               placeholder="XXXXXX"
               value={code}
@@ -191,7 +195,7 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
               name="playerName"
               style={styles.input}
               type="text"
-              placeholder="Enter your name..."
+              placeholder="Enter your name…"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={16}
@@ -200,14 +204,20 @@ export function HomeScreen({ onJoined }: HomeScreenProps) {
             />
             {error && <p style={styles.error}>{error}</p>}
             <button style={styles.btnPrimary} type="submit" disabled={loading}>
-              {loading ? "Joining..." : "Join Room"}
+              {loading ? "Joining…" : "Join Room"}
             </button>
             <button style={styles.btnGhost} type="button" onClick={() => { setMode("home"); setError(null); }}>
-              Back
+              ← Back
             </button>
           </motion.form>
         )}
       </motion.div>
+
+      <footer style={styles.footer}>
+        <span>v1.0</span>
+        <span aria-hidden>·</span>
+        <span>No accounts · No tracking</span>
+      </footer>
     </div>
   );
 }
@@ -216,117 +226,149 @@ const styles = {
   container: {
     minHeight: "100vh",
     display: "flex",
+    flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
-    background: "radial-gradient(ellipse at center, #1a0a2e 0%, #0a0a0f 70%)",
-    padding: "20px",
+    background: color.bg.app,
+    padding: space[5],
+    position: "relative" as const,
+    overflow: "hidden",
+  } as React.CSSProperties,
+  vignette: {
+    position: "absolute",
+    top: "-20%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "min(800px, 120vw)",
+    height: "min(800px, 120vw)",
+    background: `radial-gradient(circle, ${color.moonlight.bg} 0%, transparent 60%)`,
+    pointerEvents: "none",
+    zIndex: 0,
   } as React.CSSProperties,
   card: {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "20px",
-    padding: "clamp(24px, 6vw, 48px) clamp(20px, 5vw, 40px)",
+    position: "relative",
+    zIndex: 2,
+    background: color.surface.card,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius["3xl"],
+    padding: `clamp(${space[6]}, 6vw, ${space[8]}) clamp(${space[5]}, 5vw, ${space[7]})`,
     width: "100%",
-    maxWidth: "420px",
-    backdropFilter: "blur(20px)",
-    boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+    maxWidth: layout.maxWidthMobile,
+    boxShadow: shadow.xl,
   } as React.CSSProperties,
   logo: {
     textAlign: "center" as const,
-    marginBottom: "36px",
+    marginBottom: space[7],
   },
   logoIcon: {
-    fontSize: "52px",
+    fontSize: "48px",
     display: "block",
-    marginBottom: "12px",
+    marginBottom: space[3],
+    filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.5))",
   } as React.CSSProperties,
   title: {
-    fontSize: "28px",
-    fontWeight: 800,
-    color: "#e8e8f0",
-    letterSpacing: "-0.02em",
+    fontSize: font.size["2xl"],
+    fontWeight: font.weight.black,
+    color: color.text.primary,
+    letterSpacing: font.letterSpacing.tight,
+    lineHeight: font.lineHeight.tight,
   } as React.CSSProperties,
   subtitle: {
-    fontSize: "14px",
-    color: "#888",
-    marginTop: "6px",
+    fontSize: font.size.sm,
+    color: color.text.muted,
+    marginTop: space[2],
   } as React.CSSProperties,
   buttonGroup: {
     display: "flex",
     flexDirection: "column" as const,
-    gap: "12px",
+    gap: space[3],
   },
   form: {
     display: "flex",
     flexDirection: "column" as const,
-    gap: "12px",
+    gap: space[3],
   },
   label: {
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "#aaa",
+    fontSize: font.size.xs,
+    fontWeight: font.weight.semibold,
+    color: color.text.secondary,
     textTransform: "uppercase" as const,
-    letterSpacing: "0.08em",
+    letterSpacing: font.letterSpacing.wide,
   } as React.CSSProperties,
   input: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    borderRadius: "10px",
-    padding: "12px 16px",
-    color: "#e8e8f0",
-    fontSize: "16px",
+    background: color.surface.input,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.md,
+    padding: `${space[3]} ${space[4]}`,
+    color: color.text.primary,
+    fontSize: font.size.md,           // 16px min to prevent iOS zoom
     outline: "none",
-    transition: "border-color 0.2s",
+    transition: "border-color 150ms ease, background 150ms ease",
     width: "100%",
+    minHeight: layout.minTapTarget,
   } as React.CSSProperties,
   btnPrimary: {
-    background: "linear-gradient(135deg, #6A0572, #E63946)",
+    background: color.accent.base,
     border: "none",
-    borderRadius: "10px",
-    padding: "14px",
-    color: "#fff",
-    fontSize: "16px",
-    fontWeight: 700,
+    borderRadius: radius.md,
+    padding: space[4],
+    color: color.text.onAccent,
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
     cursor: "pointer",
-    transition: "opacity 0.2s",
-    marginTop: "4px",
+    transition: "background 150ms ease, transform 80ms ease",
+    minHeight: layout.minTapTarget,
+    letterSpacing: "0.01em",
+    boxShadow: shadow.sm,
   } as React.CSSProperties,
   btnSecondary: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    borderRadius: "10px",
-    padding: "14px",
-    color: "#e8e8f0",
-    fontSize: "16px",
-    fontWeight: 600,
+    background: color.surface.raised,
+    border: `1px solid ${color.border.default}`,
+    borderRadius: radius.md,
+    padding: space[4],
+    color: color.text.primary,
+    fontSize: font.size.md,
+    fontWeight: font.weight.semibold,
     cursor: "pointer",
+    transition: "background 150ms ease",
+    minHeight: layout.minTapTarget,
   } as React.CSSProperties,
   btnGhost: {
-    background: "none",
+    background: "transparent",
     border: "none",
-    color: "#888",
-    fontSize: "14px",
+    color: color.text.secondary,
+    fontSize: font.size.sm,
     cursor: "pointer",
-    padding: "12px 8px",
-    minHeight: "44px",
-    textDecoration: "underline",
+    padding: space[2],
+    minHeight: layout.minTapTarget,
+    textAlign: "center" as const,
   } as React.CSSProperties,
   error: {
-    color: "#E63946",
-    fontSize: "13px",
-    background: "rgba(230,57,70,0.1)",
-    border: "1px solid rgba(230,57,70,0.3)",
-    borderRadius: "8px",
-    padding: "10px 14px",
+    color: color.accent.base,
+    fontSize: font.size.sm,
+    background: color.accent.bg,
+    border: `1px solid ${color.accent.border}`,
+    borderRadius: radius.md,
+    padding: `${space[3]} ${space[4]}`,
   } as React.CSSProperties,
   advancedBox: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    padding: "16px",
+    background: color.bg.elevated,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.lg,
+    padding: space[4],
     display: "flex",
     flexDirection: "column" as const,
-    gap: "14px",
+    gap: space[4],
+  } as React.CSSProperties,
+  footer: {
+    position: "relative",
+    zIndex: 2,
+    marginTop: space[6],
+    display: "flex",
+    gap: space[2],
+    fontSize: font.size.xs,
+    color: color.text.muted,
+    letterSpacing: font.letterSpacing.wide,
   } as React.CSSProperties,
 } as const;
 
@@ -348,9 +390,9 @@ function PhaseSlider({
   const fmt = (s: number) => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60 > 0 ? `${s % 60}s` : ""}`.trim() : `${s}s`;
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-        <span style={{ fontSize: "13px", color: "#aaa" }}>{label}</span>
-        <span style={{ fontSize: "13px", fontWeight: 700, color: "#e8e8f0" }}>{fmt(value)}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: space[2] }}>
+        <span style={{ fontSize: font.size.sm, color: color.text.secondary }}>{label}</span>
+        <span style={{ fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.text.primary }}>{fmt(value)}</span>
       </div>
       <input
         type="range"
@@ -359,9 +401,10 @@ function PhaseSlider({
         step={15}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#6A0572", cursor: "pointer" }}
+        style={{ width: "100%", accentColor: color.accent.base, cursor: "pointer" }}
+        aria-label={label}
       />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#555", marginTop: "2px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: font.size.xs, color: color.text.muted, marginTop: space[1] }}>
         <span>{fmt(min)}</span>
         <span>{fmt(max)}</span>
       </div>

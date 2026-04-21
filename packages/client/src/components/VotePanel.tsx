@@ -1,6 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PublicPlayer } from "@werewolf/shared";
+import { color, font, space, radius, layout } from "../design/tokens.js";
 
 interface VotePanelProps {
   alivePlayers: PublicPlayer[];
@@ -26,16 +27,25 @@ export function VotePanel({
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "16px",
-        padding: "20px",
+        background: color.surface.card,
+        border: `1px solid ${color.border.subtle}`,
+        borderRadius: radius.xl,
+        padding: space[5],
       }}
     >
-      <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "16px" }}>
+      <h3
+        style={{
+          fontSize: font.size.sm,
+          fontWeight: font.weight.bold,
+          color: color.text.secondary,
+          textTransform: "uppercase",
+          letterSpacing: font.letterSpacing.wide,
+          marginBottom: space[4],
+        }}
+      >
         Vote to Lynch
       </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: space[2] }}>
         <AnimatePresence>
           {alivePlayers
             .filter((p) => p.id !== myPlayerId)
@@ -51,11 +61,11 @@ export function VotePanel({
                   onClick={() => !disabled && onVote(player.id)}
                   disabled={disabled}
                   style={{
-                    background: isVoted ? `${player.color}20` : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${isVoted ? player.color : "rgba(255,255,255,0.1)"}`,
-                    borderRadius: "12px",
-                    padding: "13px 16px",
-                    minHeight: "44px",
+                    background: isVoted ? color.accent.bg : color.surface.input,
+                    border: `1px solid ${isVoted ? color.accent.border : color.border.subtle}`,
+                    borderRadius: radius.lg,
+                    padding: `${space[3]} ${space[4]}`,
+                    minHeight: layout.minTapTarget,
                     cursor: disabled ? "not-allowed" : "pointer",
                     textAlign: "left",
                     position: "relative",
@@ -63,7 +73,7 @@ export function VotePanel({
                     transition: "all 0.2s",
                   }}
                 >
-                  {/* Vote progress bar */}
+                  {/* Animated vote token progress bar — player.color stays (game data) */}
                   <div
                     style={{
                       position: "absolute",
@@ -74,48 +84,71 @@ export function VotePanel({
                       borderRadius: "inherit",
                     }}
                   />
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
                       <div
                         style={{
                           width: 32,
                           height: 32,
-                          borderRadius: "50%",
+                          borderRadius: radius.pill,
                           background: player.color,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: "16px",
-                          fontWeight: 700,
-                          color: "#fff",
+                          fontSize: font.size.md,
+                          fontWeight: font.weight.bold,
+                          color: color.text.onAccent,
                           flexShrink: 0,
                         }}
                       >
                         {player.name.charAt(0).toUpperCase()}
                       </div>
-                      <span style={{ fontSize: "15px", fontWeight: isVoted ? 700 : 400, color: "#e8e8f0" }}>
+                      <span
+                        style={{
+                          fontSize: font.size.base,
+                          fontWeight: isVoted ? font.weight.bold : font.weight.regular,
+                          color: color.text.primary,
+                        }}
+                      >
                         {player.name}
                         {!player.hasVotingRights && (
-                          <span style={{ fontSize: "12px", color: "#888", marginLeft: "6px" }}>no vote</span>
+                          <span
+                            style={{
+                              fontSize: font.size.xs,
+                              color: color.text.muted,
+                              marginLeft: space[1],
+                            }}
+                          >
+                            no vote
+                          </span>
                         )}
                       </span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: space[2] }}>
                       {votes > 0 && (
                         <span
                           style={{
-                            background: "#E63946",
-                            color: "#fff",
-                            borderRadius: "12px",
-                            padding: "2px 10px",
-                            fontSize: "13px",
-                            fontWeight: 700,
+                            background: color.accent.base,
+                            color: color.text.onAccent,
+                            borderRadius: radius.lg,
+                            padding: `2px ${space[2]}`,
+                            fontSize: font.size.sm,
+                            fontWeight: font.weight.bold,
                           }}
                         >
                           {votes}
                         </span>
                       )}
-                      {isVoted && <span style={{ color: player.color, fontSize: "16px" }}>✓</span>}
+                      {isVoted && (
+                        <span style={{ color: color.accent.base, fontSize: font.size.md }}>✓</span>
+                      )}
                     </div>
                   </div>
                 </motion.button>
@@ -128,15 +161,15 @@ export function VotePanel({
             onClick={() => !disabled && onVote("skip")}
             disabled={disabled}
             style={{
-              background: myVote === null ? "rgba(255,255,255,0.08)" : "transparent",
-              border: "1px dashed rgba(255,255,255,0.2)",
-              borderRadius: "12px",
-              padding: "13px 16px",
-              minHeight: "44px",
+              background: myVote === null ? color.surface.input : "transparent",
+              border: `1px dashed ${color.border.default}`,
+              borderRadius: radius.lg,
+              padding: `${space[3]} ${space[4]}`,
+              minHeight: layout.minTapTarget,
               cursor: disabled ? "not-allowed" : "pointer",
-              color: "#888",
-              fontSize: "14px",
-              marginTop: "4px",
+              color: color.text.muted,
+              fontSize: font.size.sm,
+              marginTop: space[1],
             }}
           >
             Skip (abstain)

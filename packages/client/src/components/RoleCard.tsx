@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { RoleName, Team, ROLES } from "@werewolf/shared";
+import { color, font, space, radius, shadow } from "../design/tokens.js";
 
 interface RoleCardProps {
   role: RoleName;
@@ -13,10 +14,10 @@ interface RoleCardProps {
   flipped?: boolean;
 }
 
-const TEAM_COLORS: Record<Team, string> = {
-  [Team.VILLAGE]: "#2A9D8F",
-  [Team.WEREWOLF]: "#E63946",
-  [Team.NEUTRAL]: "#F4A261",
+const TEAM_TOKENS: Record<Team, { fg: string; bg: string; border: string }> = {
+  [Team.VILLAGE]: { fg: color.team.village, bg: color.team.villageBg, border: color.team.villageBorder },
+  [Team.WEREWOLF]: { fg: color.team.werewolf, bg: color.team.werewolfBg, border: color.team.werewolfBorder },
+  [Team.NEUTRAL]: { fg: color.team.neutral, bg: color.team.neutralBg, border: color.team.neutralBorder },
 };
 
 const TEAM_LABELS: Record<Team, string> = {
@@ -56,9 +57,10 @@ export function RoleCard({
   myId,
   flipped = false,
 }: RoleCardProps) {
-  const teamColor = TEAM_COLORS[team];
+  const tokens = TEAM_TOKENS[team];
   const icon = ROLE_ICONS[role] ?? "❓";
   const roleDef = ROLES[role];
+  const hasFooter = Boolean(loverName) || masonIds.length > 0;
 
   return (
     <motion.div
@@ -66,18 +68,20 @@ export function RoleCard({
       animate={{ rotateY: 0, opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.2 }}
       style={{
-        background: `linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))`,
-        border: `1px solid ${teamColor}40`,
-        borderRadius: "20px",
-        padding: "28px 24px",
+        background: color.surface.card,
+        border: `1px solid ${tokens.border}`,
+        borderRadius: radius["2xl"],
+        padding: `${space[7]} ${space[6]}`,
         maxWidth: "400px",
         width: "100%",
-        boxShadow: `0 0 40px ${teamColor}20, 0 8px 32px rgba(0,0,0,0.4)`,
+        boxShadow: shadow.lg,
         position: "relative",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Team glow */}
+      {/* Team glow stripe at very top */}
       <div
         style={{
           position: "absolute",
@@ -85,79 +89,96 @@ export function RoleCard({
           left: 0,
           right: 0,
           height: "3px",
-          background: `linear-gradient(90deg, transparent, ${teamColor}, transparent)`,
+          background: `linear-gradient(90deg, transparent, ${tokens.fg}, transparent)`,
         }}
       />
 
-      {/* Team badge */}
+      {/* 1. Team badge — at the very top of the hierarchy */}
       <div
         style={{
+          alignSelf: "flex-start",
           display: "inline-flex",
           alignItems: "center",
-          gap: "6px",
-          background: `${teamColor}20`,
-          border: `1px solid ${teamColor}40`,
-          borderRadius: "20px",
-          padding: "4px 12px",
-          fontSize: "12px",
-          fontWeight: 700,
-          color: teamColor,
-          letterSpacing: "0.08em",
+          gap: space[1],
+          background: tokens.bg,
+          border: `1px solid ${tokens.border}`,
+          borderRadius: radius.pill,
+          padding: `${space[1]} ${space[3]}`,
+          fontSize: font.size.xs,
+          fontWeight: font.weight.bold,
+          color: tokens.fg,
+          letterSpacing: font.letterSpacing.wide,
           textTransform: "uppercase",
-          marginBottom: "20px",
+          marginBottom: space[5],
         }}
       >
         {TEAM_LABELS[team]}
       </div>
 
-      {/* Icon + name */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+      {/* 2. Icon + name */}
+      <div style={{ display: "flex", alignItems: "center", gap: space[4], marginBottom: space[3] }}>
         <span style={{ fontSize: "48px" }}>{icon}</span>
         <div>
-          <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#e8e8f0" }}>
+          <h2
+            style={{
+              fontSize: font.size["2xl"],
+              fontWeight: font.weight.black,
+              color: color.text.primary,
+              letterSpacing: font.letterSpacing.tight,
+              lineHeight: font.lineHeight.tight,
+            }}
+          >
             {role.replace(/([A-Z])/g, " $1").trim()}
           </h2>
+          {/* 3. Tagline */}
           {roleDef?.shortDescription && (
-            <p style={{ fontSize: "13px", color: teamColor, marginTop: "4px" }}>
+            <p style={{ fontSize: font.size.sm, color: tokens.fg, marginTop: space[1] }}>
               {roleDef.shortDescription}
             </p>
           )}
         </div>
       </div>
 
-      {/* Description */}
-      <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#bbb", marginBottom: loverName || masonIds.length > 0 ? "16px" : 0 }}>
+      {/* 4. Description */}
+      <p
+        style={{
+          fontSize: font.size.sm,
+          lineHeight: font.lineHeight.relaxed,
+          color: color.text.secondary,
+          marginBottom: hasFooter ? space[4] : 0,
+        }}
+      >
         {description}
       </p>
 
-      {/* Lovers info */}
+      {/* 5. Lover footer */}
       {loverName && (
         <div
           style={{
-            background: "rgba(247,37,133,0.1)",
-            border: "1px solid rgba(247,37,133,0.3)",
-            borderRadius: "10px",
-            padding: "10px 14px",
-            fontSize: "13px",
-            color: "#F72585",
-            marginTop: "12px",
+            background: color.moonlight.bg,
+            border: `1px solid ${color.moonlight.border}`,
+            borderRadius: radius.md,
+            padding: `${space[2]} ${space[3]}`,
+            fontSize: font.size.sm,
+            color: color.moonlight.base,
+            marginTop: space[3],
           }}
         >
           💘 You are in love with <strong>{loverName}</strong>. If they die, you die.
         </div>
       )}
 
-      {/* Mason info */}
+      {/* 5. Mason footer */}
       {masonIds.length > 0 && myId && (
         <div
           style={{
-            background: "rgba(42,157,143,0.1)",
-            border: "1px solid rgba(42,157,143,0.3)",
-            borderRadius: "10px",
-            padding: "10px 14px",
-            fontSize: "13px",
-            color: "#2A9D8F",
-            marginTop: "12px",
+            background: color.team.villageBg,
+            border: `1px solid ${color.team.villageBorder}`,
+            borderRadius: radius.md,
+            padding: `${space[2]} ${space[3]}`,
+            fontSize: font.size.sm,
+            color: color.team.village,
+            marginTop: space[3],
           }}
         >
           🔨 Fellow Masons: {masonIds.filter((id) => id !== myId).length} allies

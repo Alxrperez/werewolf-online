@@ -7,6 +7,8 @@ import { ChatPanel } from "../components/ChatPanel.js";
 import { VotePanel } from "../components/VotePanel.js";
 import { Timer } from "../components/Timer.js";
 import { SessionState } from "@werewolf/shared";
+import { color, font, space, radius, shadow, layout, z } from "../design/tokens.js";
+import { useBreakpoint } from "../design/useBreakpoint.js";
 
 export function DayScreen() {
   const {
@@ -21,11 +23,11 @@ export function DayScreen() {
     currentAccusation,
     voteUpdate,
     lynchResult,
-    hunterRevengeTargets,
     lastError,
   } = useGameState();
 
-  const { sendChat, sendAccuse, sendSecond, sendVote, sendHunterRevenge } = useSocket();
+  const { sendChat, sendAccuse, sendSecond, sendVote } = useSocket();
+  const { isDesktopUp } = useBreakpoint();
   const [accuseTarget, setAccuseTarget] = useState<string | null>(null);
   const [showDeathCard, setShowDeathCard] = useState(!!lynchResult);
 
@@ -40,82 +42,39 @@ export function DayScreen() {
   const myVote = myPlayer?.voteTarget ?? null;
   const tally = voteUpdate?.tally ?? {};
 
-  // Hunter revenge overlay
-  if (hunterRevengeTargets && isAlive) {
-    return (
-      <div style={styles.overlayContainer}>
+  // ─── Composable pieces (reused by mobile + desktop layouts) ────────────────
+
+  const header = (
+    <div style={styles.header}>
+      <div>
+        <p style={styles.eyebrow}>Round {session.round}</p>
+        <h1 style={styles.title}>
+          {isVotePhase ? "⚖️ Vote" : "☀️ Day Discussion"}
+        </h1>
+      </div>
+      {timerSecondsRemaining !== null && (
+        <Timer seconds={timerSecondsRemaining} urgent={15} />
+      )}
+    </div>
+  );
+
+  const errorToast = (
+    <AnimatePresence>
+      {lastError && (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          style={styles.overlayCard}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          style={styles.errorToast}
         >
-          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#F4A261", marginBottom: "8px" }}>
-            🏹 Hunter's Last Shot
-          </h2>
-          <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "20px" }}>
-            You've been killed. Choose one player to take with you:
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {hunterRevengeTargets.map((target) => (
-              <motion.button
-                key={target.id}
-                whileHover={{ scale: 1.03 }}
-                onClick={() => sendHunterRevenge(playerId, target.id)}
-                style={{
-                  background: `${target.color}20`,
-                  border: `1px solid ${target.color}`,
-                  borderRadius: "12px",
-                  padding: "13px 16px",
-                  minHeight: "44px",
-                  cursor: "pointer",
-                  color: "#e8e8f0",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: target.color }} />
-                {target.name}
-              </motion.button>
-            ))}
-          </div>
+          {lastError.message}
         </motion.div>
-      </div>
-    );
-  }
+      )}
+    </AnimatePresence>
+  );
 
-  return (
-    <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>
-            {isVotePhase ? "⚖️ Vote" : "☀️ Day Discussion"}
-          </h1>
-          <p style={{ color: "#888", fontSize: "14px" }}>Round {session.round}</p>
-        </div>
-        {timerSecondsRemaining !== null && (
-          <Timer seconds={timerSecondsRemaining} urgent={15} />
-        )}
-      </div>
-
-      {/* Error toast */}
-      <AnimatePresence>
-        {lastError && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            style={styles.errorToast}
-          >
-            {lastError.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Player ring */}
+  const ring = (
+    <div style={styles.ringSection}>
       <PlayerRing
         players={session.players}
         myPlayerId={playerId}
@@ -125,135 +84,174 @@ export function DayScreen() {
         voteTarget={Object.fromEntries(
           session.players.filter((p) => p.voteTarget).map((p) => [p.id, p.voteTarget!])
         )}
-        size="md"
+        size={isDesktopUp ? "lg" : "md"}
       />
+    </div>
+  );
 
-      {/* Accusation banner */}
-      <AnimatePresence>
-        {currentAccusation && isDiscussion && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            style={styles.accusationBanner}
-          >
-            <p style={{ fontSize: "15px", fontWeight: 600, color: "#e8e8f0" }}>
-              <span style={{ color: "#F4A261" }}>{currentAccusation.accuserName}</span> accuses{" "}
-              <span style={{ color: "#E63946" }}>{currentAccusation.targetName}</span>
-            </p>
-            <p style={{ fontSize: "13px", color: "#aaa", marginTop: "4px" }}>
-              Someone must second this accusation within 15 seconds to proceed to vote.
-            </p>
-            {isAlive && currentAccusation.accuserId !== playerId && (
-              <button
-                style={styles.secondBtn}
-                onClick={() => sendSecond(playerId, currentAccusation.targetId)}
-              >
-                Second the Accusation ⚖️
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Accuse button */}
-      {isDiscussion && isAlive && accuseTarget && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={styles.accuseBtn}
-          onClick={() => {
-            sendAccuse(playerId, accuseTarget);
-            setAccuseTarget(null);
-          }}
-        >
-          Accuse {session.players.find((p) => p.id === accuseTarget)?.name}
-        </motion.button>
-      )}
-
-      {/* Vote panel — hidden entirely for dead players */}
-      {isVotePhase && isAlive && myPlayer?.hasVotingRights !== false && (
-        <VotePanel
-          alivePlayers={alivePlayers}
-          myPlayerId={playerId}
-          myVote={myVote}
-          onVote={(targetId) => sendVote(playerId, targetId)}
-          tally={tally}
-          disabled={false}
-        />
-      )}
-
-      {/* Dead-player observe banner (shown during vote phase when dead) */}
-      {isVotePhase && !isAlive && (
+  const accusationBanner = (
+    <AnimatePresence>
+      {currentAccusation && isDiscussion && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={styles.deadBanner}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          style={styles.accusationBanner}
         >
-          <span style={{ fontSize: "20px" }}>💀</span>
-          <span>You are dead — observe only</span>
-        </motion.div>
-      )}
-
-      {/* Lynch result */}
-      <AnimatePresence>
-        {showDeathCard && lynchResult && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            style={styles.lynchCard}
-          >
-            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#e8e8f0", marginBottom: "8px" }}>
-              {lynchResult.villageIdiotRevealed ? "🤪 Village Idiot Revealed!" : "⚖️ Lynch Result"}
-            </h3>
-            <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "8px" }}>
-              <strong style={{ color: "#E63946" }}>{lynchResult.targetName}</strong>{" "}
-              {lynchResult.villageIdiotRevealed
-                ? "is the Village Idiot — they survive but lose their vote!"
-                : `was the ${lynchResult.role?.replace(/([A-Z])/g, " $1").trim()}.`}
-            </p>
-            {lynchResult.elderPunishmentActivated && (
-              <p style={{ color: "#F4A261", fontSize: "13px" }}>
-                ⚠️ The Elder was lynched. All Village special powers are disabled!
-              </p>
-            )}
-            {lynchResult.jesterTriggered && (
-              <p style={{ color: "#F72585", fontSize: "13px" }}>
-                🃏 The Jester was lynched! Their accuser also dies...
-              </p>
-            )}
-            <button style={styles.dismissBtn} onClick={() => setShowDeathCard(false)}>
-              Continue
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chat — hidden for dead players; they see a spectator notice instead */}
-      {isAlive ? (
-        <div style={{ height: "300px" }}>
-          <ChatPanel
-            messages={chatMessages}
-            onSend={(msg) => sendChat(playerId, msg)}
-            disabled={!isDiscussion}
-            placeholder="Speak your mind..."
-            myPlayerId={playerId}
-            title="Village Discussion"
-            accentColor="#4361EE"
-          />
-        </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          style={styles.deadObserveBox}
-        >
-          <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>
-            👁️ You can observe the discussion but cannot participate.
+          <p style={styles.accusationTitle}>
+            <span style={{ color: color.state.warning }}>{currentAccusation.accuserName}</span>
+            {" accuses "}
+            <span style={{ color: color.accent.base }}>{currentAccusation.targetName}</span>
           </p>
+          <p style={styles.accusationHint}>
+            Someone must second this accusation within 15 seconds to proceed to vote.
+          </p>
+          {isAlive && currentAccusation.accuserId !== playerId && (
+            <button
+              style={styles.secondBtn}
+              onClick={() => sendSecond(playerId, currentAccusation.targetId)}
+            >
+              Second the Accusation ⚖️
+            </button>
+          )}
         </motion.div>
       )}
+    </AnimatePresence>
+  );
+
+  const accuseBtn = isDiscussion && isAlive && accuseTarget && (
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={styles.accuseBtn}
+      onClick={() => {
+        sendAccuse(playerId, accuseTarget);
+        setAccuseTarget(null);
+      }}
+    >
+      Accuse {session.players.find((p) => p.id === accuseTarget)?.name}
+    </motion.button>
+  );
+
+  const votePanel = isVotePhase && isAlive && myPlayer?.hasVotingRights !== false && (
+    <VotePanel
+      alivePlayers={alivePlayers}
+      myPlayerId={playerId}
+      myVote={myVote}
+      onVote={(targetId) => sendVote(playerId, targetId)}
+      tally={tally}
+      disabled={false}
+    />
+  );
+
+  const deadVoteBanner = isVotePhase && !isAlive && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={styles.deadBanner}
+    >
+      <span style={{ fontSize: font.size.xl }}>💀</span>
+      <span>You are dead — observe only</span>
+    </motion.div>
+  );
+
+  const lynchCard = (
+    <AnimatePresence>
+      {showDeathCard && lynchResult && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          style={styles.lynchCard}
+        >
+          <h3 style={styles.lynchTitle}>
+            {lynchResult.villageIdiotRevealed ? "🤪 Village Idiot Revealed!" : "⚖️ Lynch Result"}
+          </h3>
+          <p style={styles.lynchBody}>
+            <strong style={{ color: color.accent.base }}>{lynchResult.targetName}</strong>{" "}
+            {lynchResult.villageIdiotRevealed
+              ? "is the Village Idiot — they survive but lose their vote!"
+              : `was the ${lynchResult.role?.replace(/([A-Z])/g, " $1").trim()}.`}
+          </p>
+          {lynchResult.elderPunishmentActivated && (
+            <p style={styles.lynchWarn}>
+              ⚠️ The Elder was lynched. All Village special powers are disabled!
+            </p>
+          )}
+          {lynchResult.jesterTriggered && (
+            <p style={styles.lynchJester}>
+              🃏 The Jester was lynched! Their accuser also dies...
+            </p>
+          )}
+          <button style={styles.dismissBtn} onClick={() => setShowDeathCard(false)}>
+            Continue
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  const chat = isAlive ? (
+    <div style={styles.chatWrap}>
+      <ChatPanel
+        messages={chatMessages}
+        onSend={(msg) => sendChat(playerId, msg)}
+        disabled={!isDiscussion}
+        placeholder="Speak your mind..."
+        myPlayerId={playerId}
+        title="Village Discussion"
+        accentColor={color.moonlight.base}
+      />
+    </div>
+  ) : (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={styles.deadObserveBox}
+    >
+      <p style={styles.deadObserveText}>
+        👁️ You can observe the discussion but cannot participate.
+      </p>
+    </motion.div>
+  );
+
+  // ─── Desktop: three-column (ring · chat/accusations · votes) ───────────────
+  if (isDesktopUp) {
+    return (
+      <div style={styles.pageDesktop}>
+        <div style={styles.containerDesktop}>
+          {header}
+          {errorToast}
+          <div style={styles.gridDesktop}>
+            <div style={styles.colLeft}>{ring}</div>
+            <div style={styles.colMid}>
+              {accusationBanner}
+              {accuseBtn}
+              {lynchCard}
+              {chat}
+            </div>
+            <div style={styles.colRight}>
+              {votePanel}
+              {deadVoteBanner}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Mobile: stacked ───────────────────────────────────────────────────────
+  return (
+    <div style={styles.container}>
+      {header}
+      {errorToast}
+      {ring}
+      {accusationBanner}
+      {accuseBtn}
+      {votePanel}
+      {deadVoteBanner}
+      {lynchCard}
+      {chat}
     </div>
   );
 }
@@ -261,113 +259,211 @@ export function DayScreen() {
 const styles = {
   container: {
     minHeight: "100vh",
-    background: "radial-gradient(ellipse at top, #1a1000 0%, #0a0a0f 60%)",
-    padding: "24px 20px",
+    background: color.bg.app,
+    padding: `${space[6]} ${space[4]}`,
     display: "flex",
     flexDirection: "column" as const,
-    gap: "20px",
-    maxWidth: "700px",
+    gap: space[5],
+    maxWidth: layout.maxWidthTablet,
     margin: "0 auto",
-  },
+  } as React.CSSProperties,
+  pageDesktop: {
+    minHeight: "100vh",
+    background: color.bg.app,
+    padding: `${space[7]} ${space[6]}`,
+    display: "flex",
+    justifyContent: "center",
+  } as React.CSSProperties,
+  containerDesktop: {
+    width: "100%",
+    maxWidth: layout.maxWidthDesktop,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: space[6],
+  } as React.CSSProperties,
+  gridDesktop: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1.2fr 1fr",
+    gap: space[6],
+    alignItems: "start",
+  } as React.CSSProperties,
+  colLeft: {
+    position: "sticky" as const,
+    top: space[6],
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: space[4],
+  } as React.CSSProperties,
+  colMid: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: space[4],
+    minWidth: 0,
+  } as React.CSSProperties,
+  colRight: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: space[4],
+    position: "sticky" as const,
+    top: space[6],
+  } as React.CSSProperties,
+
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-  },
+    gap: space[4],
+  } as React.CSSProperties,
+  eyebrow: {
+    fontSize: font.size.xs,
+    fontWeight: font.weight.semibold,
+    color: color.text.muted,
+    textTransform: "uppercase" as const,
+    letterSpacing: font.letterSpacing.wider,
+    marginBottom: space[1],
+  } as React.CSSProperties,
   title: {
-    fontSize: "26px",
-    fontWeight: 800,
-    color: "#e8e8f0",
-  },
+    fontSize: font.size["2xl"],
+    fontWeight: font.weight.black,
+    color: color.text.primary,
+    letterSpacing: font.letterSpacing.tight,
+    lineHeight: font.lineHeight.tight,
+  } as React.CSSProperties,
+
   errorToast: {
-    background: "rgba(230,57,70,0.1)",
-    border: "1px solid rgba(230,57,70,0.3)",
-    borderRadius: "10px",
-    padding: "10px 16px",
-    color: "#E63946",
-    fontSize: "14px",
-  },
+    background: color.accent.bg,
+    border: `1px solid ${color.accent.border}`,
+    borderRadius: radius.md,
+    padding: `${space[2]} ${space[4]}`,
+    color: color.accent.base,
+    fontSize: font.size.sm,
+  } as React.CSSProperties,
+
+  ringSection: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: space[4],
+    padding: space[4],
+    background: color.surface.card,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.xl,
+  } as React.CSSProperties,
+
   accusationBanner: {
-    background: "rgba(244,162,97,0.08)",
-    border: "1px solid rgba(244,162,97,0.25)",
-    borderRadius: "14px",
-    padding: "16px 20px",
-  },
+    background: color.state.warningBg,
+    border: `1px solid ${color.state.warning}`,
+    borderRadius: radius.lg,
+    padding: `${space[4]} ${space[5]}`,
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: space[2],
+  } as React.CSSProperties,
+  accusationTitle: {
+    fontSize: font.size.base,
+    fontWeight: font.weight.semibold,
+    color: color.text.primary,
+  } as React.CSSProperties,
+  accusationHint: {
+    fontSize: font.size.sm,
+    color: color.text.secondary,
+  } as React.CSSProperties,
   secondBtn: {
-    marginTop: "12px",
-    background: "rgba(244,162,97,0.15)",
-    border: "1px solid rgba(244,162,97,0.4)",
-    borderRadius: "10px",
-    padding: "13px 16px",
-    minHeight: "44px",
-    color: "#F4A261",
-    fontWeight: 700,
+    marginTop: space[2],
+    background: color.state.warningBg,
+    border: `1px solid ${color.state.warning}`,
+    borderRadius: radius.md,
+    padding: `${space[3]} ${space[4]}`,
+    minHeight: layout.minTapTarget,
+    color: color.state.warning,
+    fontWeight: font.weight.bold,
     cursor: "pointer",
-    fontSize: "14px",
-  },
+    fontSize: font.size.sm,
+  } as React.CSSProperties,
   accuseBtn: {
-    background: "rgba(230,57,70,0.15)",
-    border: "1px solid rgba(230,57,70,0.35)",
-    borderRadius: "12px",
-    padding: "13px",
-    color: "#E63946",
-    fontSize: "15px",
-    fontWeight: 700,
+    background: color.accent.base,
+    border: "none",
+    borderRadius: radius.md,
+    padding: space[4],
+    color: color.text.onAccent,
+    fontSize: font.size.md,
+    fontWeight: font.weight.bold,
     cursor: "pointer",
     width: "100%",
-  },
+    minHeight: layout.minTapTarget,
+    boxShadow: shadow.sm,
+  } as React.CSSProperties,
+
   lynchCard: {
-    background: "rgba(230,57,70,0.07)",
-    border: "1px solid rgba(230,57,70,0.2)",
-    borderRadius: "16px",
-    padding: "20px",
-  },
+    background: color.accent.bg,
+    border: `1px solid ${color.accent.border}`,
+    borderRadius: radius.xl,
+    padding: space[5],
+    zIndex: z.dialog,
+  } as React.CSSProperties,
+  lynchTitle: {
+    fontSize: font.size.lg,
+    fontWeight: font.weight.black,
+    color: color.text.primary,
+    marginBottom: space[2],
+  } as React.CSSProperties,
+  lynchBody: {
+    color: color.text.secondary,
+    fontSize: font.size.sm,
+    marginBottom: space[2],
+    lineHeight: font.lineHeight.normal,
+  } as React.CSSProperties,
+  lynchWarn: {
+    color: color.state.warning,
+    fontSize: font.size.sm,
+    marginTop: space[2],
+  } as React.CSSProperties,
+  lynchJester: {
+    color: color.state.warning,
+    fontSize: font.size.sm,
+    marginTop: space[2],
+  } as React.CSSProperties,
   dismissBtn: {
-    marginTop: "14px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "10px",
-    padding: "13px 20px",
-    minHeight: "44px",
-    color: "#e8e8f0",
+    marginTop: space[4],
+    background: color.surface.raised,
+    border: `1px solid ${color.border.default}`,
+    borderRadius: radius.md,
+    padding: `${space[3]} ${space[5]}`,
+    minHeight: layout.minTapTarget,
+    color: color.text.primary,
     cursor: "pointer",
-    fontSize: "14px",
-  },
+    fontSize: font.size.sm,
+    fontWeight: font.weight.semibold,
+  } as React.CSSProperties,
   deadBanner: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    padding: "14px 18px",
-    color: "#666",
-    fontSize: "14px",
+    gap: space[3],
+    background: color.surface.card,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.lg,
+    padding: `${space[4]} ${space[5]}`,
+    color: color.text.muted,
+    fontSize: font.size.sm,
     fontStyle: "italic" as const,
-  },
+  } as React.CSSProperties,
   deadObserveBox: {
-    background: "rgba(255,255,255,0.02)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "12px",
-    padding: "16px 18px",
+    background: color.surface.card,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.lg,
+    padding: `${space[4]} ${space[5]}`,
     textAlign: "center" as const,
-  },
-  overlayContainer: {
-    position: "fixed" as const,
-    inset: 0,
-    background: "rgba(0,0,0,0.9)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 999,
-    padding: "20px",
-  },
-  overlayCard: {
-    background: "rgba(10,10,20,0.98)",
-    border: "1px solid rgba(244,162,97,0.3)",
-    borderRadius: "24px",
-    padding: "36px 28px",
-    maxWidth: "400px",
-    width: "100%",
-  },
+  } as React.CSSProperties,
+  deadObserveText: {
+    fontSize: font.size.sm,
+    color: color.text.muted,
+    margin: 0,
+  } as React.CSSProperties,
+  chatWrap: {
+    height: "360px",
+    background: color.surface.card,
+    border: `1px solid ${color.border.subtle}`,
+    borderRadius: radius.lg,
+    overflow: "hidden",
+  } as React.CSSProperties,
 } as const;

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "dompurify";
 import { ChatMessage } from "../stores/gameStore.js";
+import { color, font, space, radius, layout } from "../design/tokens.js";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -10,6 +11,7 @@ interface ChatPanelProps {
   placeholder?: string;
   myPlayerId: string | null;
   title?: string;
+  /** Title/header accent. Defaults to moonlight (calm informational). */
   accentColor?: string;
 }
 
@@ -20,7 +22,7 @@ export function ChatPanel({
   placeholder = "Say something...",
   myPlayerId,
   title = "Chat",
-  accentColor = "#4361EE",
+  accentColor = color.moonlight.base,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -43,22 +45,22 @@ export function ChatPanel({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "16px",
+        background: color.surface.card,
+        border: `1px solid ${color.border.subtle}`,
+        borderRadius: radius.xl,
         overflow: "hidden",
       }}
     >
       {/* Header */}
       <div
         style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          fontSize: "13px",
-          fontWeight: 700,
+          padding: `${space[3]} ${space[4]}`,
+          borderBottom: `1px solid ${color.border.subtle}`,
+          fontSize: font.size.sm,
+          fontWeight: font.weight.bold,
           color: accentColor,
           textTransform: "uppercase",
-          letterSpacing: "0.08em",
+          letterSpacing: font.letterSpacing.wide,
         }}
       >
         {title}
@@ -69,16 +71,31 @@ export function ChatPanel({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "12px",
+          padding: space[3],
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
+          gap: space[2],
           minHeight: 0,
         }}
       >
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
             const isMe = msg.playerId === myPlayerId;
+
+            // Bubble styling — crimson is sacred, so own-messages use a subtle
+            // elevated surface rather than the accent tint. WW chat keeps its
+            // distinctive danger tint because that context IS the threat.
+            const bubbleBg = msg.isWWChat
+              ? color.accent.bg
+              : isMe
+              ? color.surface.raised
+              : color.surface.input;
+            const bubbleBorder = msg.isWWChat
+              ? color.accent.border
+              : isMe
+              ? color.border.default
+              : color.border.subtle;
+
             return (
               <motion.div
                 key={msg.id}
@@ -90,22 +107,28 @@ export function ChatPanel({
                 }}
               >
                 {!isMe && (
-                  <span style={{ fontSize: "11px", color: "#888", marginLeft: "4px", marginBottom: "2px", display: "block" }}>
+                  <span
+                    style={{
+                      fontSize: font.size.xs,
+                      color: color.text.muted,
+                      marginLeft: space[1],
+                      marginBottom: 2,
+                      display: "block",
+                    }}
+                  >
                     {msg.playerName}
                   </span>
                 )}
                 <div
                   style={{
-                    background: isMe
-                      ? `${accentColor}30`
-                      : msg.isWWChat
-                      ? "rgba(230,57,70,0.15)"
-                      : "rgba(255,255,255,0.06)",
-                    border: `1px solid ${isMe ? `${accentColor}50` : msg.isWWChat ? "rgba(230,57,70,0.3)" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: isMe ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
-                    padding: "8px 12px",
-                    fontSize: "14px",
-                    color: "#e8e8f0",
+                    background: bubbleBg,
+                    border: `1px solid ${bubbleBorder}`,
+                    borderRadius: isMe
+                      ? `${radius.lg} ${radius.lg} ${radius.sm} ${radius.lg}`
+                      : `${radius.lg} ${radius.lg} ${radius.lg} ${radius.sm}`,
+                    padding: `${space[2]} ${space[3]}`,
+                    fontSize: font.size.sm,
+                    color: color.text.primary,
                     wordBreak: "break-word",
                   }}
                 >
@@ -120,8 +143,29 @@ export function ChatPanel({
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "8px" }}>
-        <label htmlFor="chat-message-input" style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+      <form
+        onSubmit={handleSend}
+        style={{
+          padding: `${space[2]} ${space[3]}`,
+          borderTop: `1px solid ${color.border.subtle}`,
+          display: "flex",
+          gap: space[2],
+        }}
+      >
+        <label
+          htmlFor="chat-message-input"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
           Chat message
         </label>
         <input
@@ -129,13 +173,13 @@ export function ChatPanel({
           name="message"
           style={{
             flex: 1,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "8px",
-            padding: "10px 12px",
-            minHeight: "44px",
-            color: "#e8e8f0",
-            fontSize: "16px",  /* 16px prevents iOS zoom on focus */
+            background: color.surface.input,
+            border: `1px solid ${color.border.subtle}`,
+            borderRadius: radius.md,
+            padding: `${space[2]} ${space[3]}`,
+            minHeight: layout.minTapTarget,
+            color: color.text.primary,
+            fontSize: font.size.md, // 16px prevents iOS zoom on focus
             outline: "none",
           }}
           type="text"
@@ -146,21 +190,22 @@ export function ChatPanel({
           maxLength={300}
           autoComplete="off"
         />
+        {/* Send button uses the crimson accent — it IS the primary action in the chat row. */}
         <button
           type="submit"
           disabled={disabled || !input.trim()}
           style={{
-            background: accentColor,
+            background: color.accent.base,
             border: "none",
-            borderRadius: "8px",
-            padding: "10px 16px",
-            minHeight: "44px",
-            minWidth: "44px",
-            color: "#fff",
-            fontWeight: 700,
+            borderRadius: radius.md,
+            padding: `${space[2]} ${space[4]}`,
+            minHeight: layout.minTapTarget,
+            minWidth: layout.minTapTarget,
+            color: color.text.onAccent,
+            fontWeight: font.weight.bold,
             cursor: disabled ? "not-allowed" : "pointer",
             opacity: disabled || !input.trim() ? 0.4 : 1,
-            fontSize: "14px",
+            fontSize: font.size.sm,
           }}
         >
           ↑

@@ -12,6 +12,7 @@ import { DayScreen } from "./screens/DayScreen.js";
 import { GameOverScreen } from "./screens/GameOverScreen.js";
 import { RoleCard } from "./components/RoleCard.js";
 import { DeathAnimation } from "./components/DeathAnimation.js";
+import { HunterRevengeOverlay } from "./components/HunterRevengeOverlay.js";
 import { Timer } from "./components/Timer.js";
 
 export default function App() {
@@ -137,6 +138,9 @@ export default function App() {
         visible={showDawn}
         onDismiss={handleDawnDismiss}
       />
+
+      {/* Hunter revenge prompt (overlay on top of any screen) */}
+      <HunterRevengeOverlay />
 
       {/* Main screen routing — keyed by screen so AnimatePresence transitions on change */}
       <AnimatePresence mode="wait">

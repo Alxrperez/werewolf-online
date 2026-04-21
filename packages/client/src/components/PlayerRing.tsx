@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PublicPlayer } from "@werewolf/shared";
+import { color, font, space, radius, layout } from "../design/tokens.js";
 
 interface PlayerRingProps {
   players: PublicPlayer[];
@@ -28,14 +29,15 @@ export function PlayerRing({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
+  // Geometry math — unchanged from the original implementation.
   const avatarSize = size === "sm" ? 44 : size === "lg" ? 72 : 56;
-  const fontSize = size === "sm" ? 11 : size === "lg" ? 15 : 13;
+  const labelFontSize = size === "sm" ? font.size.xs : size === "lg" ? font.size.base : font.size.sm;
   const ringRadius = Math.max(120, players.length * 28);
   const centerX = ringRadius + avatarSize;
   const centerY = ringRadius + avatarSize;
   const svgSize = (ringRadius + avatarSize) * 2;
 
-  // Scale the ring down when the parent is narrower than the ring's natural size
+  // Scale the ring down when the parent is narrower than the ring's natural size.
   useEffect(() => {
     if (!wrapperRef.current) return;
     const parent = wrapperRef.current.parentElement;
@@ -70,6 +72,7 @@ export function PlayerRing({
         const isHighlighted = highlightIds.includes(player.id);
         const isDead = !player.isAlive;
         const isDisabled = disabledIds.includes(player.id) || isDead;
+        const isInteractive = !isDisabled && Boolean(onSelect);
 
         const voteCount = showVotes
           ? Object.values(voteTarget).filter((t) => t === player.id).length
@@ -80,8 +83,8 @@ export function PlayerRing({
             key={player.id}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: isDead ? 0.4 : 1 }}
-            whileHover={!isDisabled && onSelect ? { scale: 1.1 } : {}}
-            whileTap={!isDisabled && onSelect ? { scale: 0.95 } : {}}
+            whileHover={isInteractive ? { scale: 1.1 } : {}}
+            whileTap={isInteractive ? { scale: 0.95 } : {}}
             onClick={() => !isDisabled && onSelect?.(player.id)}
             style={{
               position: "absolute",
@@ -89,29 +92,30 @@ export function PlayerRing({
               top: y - avatarSize / 2,
               width: avatarSize,
               height: avatarSize,
+              minHeight: isInteractive ? layout.minTapTarget : undefined,
               cursor: isDisabled ? "default" : onSelect ? "pointer" : "default",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "4px",
+              gap: space[1],
             }}
           >
-            {/* Avatar circle */}
+            {/* Avatar circle — player.color stays (game data) */}
             <div
               style={{
                 width: avatarSize,
                 height: avatarSize,
-                borderRadius: "50%",
-                background: isDead ? "#333" : player.color,
+                borderRadius: radius.pill,
+                background: isDead ? color.border.subtle : player.color,
                 border: isSelected
-                  ? "3px solid #fff"
+                  ? `3px solid ${color.accent.base}`
                   : isHighlighted
                   ? `3px solid ${player.color}`
                   : isMe
-                  ? "3px solid rgba(255,255,255,0.6)"
-                  : "2px solid rgba(255,255,255,0.1)",
+                  ? `3px solid ${color.text.primary}`
+                  : `2px solid ${color.border.subtle}`,
                 boxShadow: isSelected
-                  ? `0 0 20px ${player.color}80`
+                  ? `0 0 20px ${color.accent.glow}`
                   : isHighlighted
                   ? `0 0 12px ${player.color}60`
                   : "none",
@@ -119,30 +123,32 @@ export function PlayerRing({
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: avatarSize * 0.45,
+                color: color.text.onAccent,
+                fontWeight: font.weight.bold,
                 transition: "all 0.2s",
                 position: "relative",
               }}
             >
               {isDead ? "💀" : player.name.charAt(0).toUpperCase()}
 
-              {/* Vote badge */}
+              {/* Vote badge — accent = active/your-turn signal */}
               {voteCount > 0 && (
                 <div
                   style={{
                     position: "absolute",
                     top: -4,
                     right: -4,
-                    background: "#E63946",
-                    color: "#fff",
-                    borderRadius: "50%",
+                    background: color.accent.base,
+                    color: color.text.onAccent,
+                    borderRadius: radius.pill,
                     width: 20,
                     height: 20,
-                    fontSize: 11,
-                    fontWeight: 700,
+                    fontSize: font.size.xs,
+                    fontWeight: font.weight.bold,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    border: "2px solid #0a0a0f",
+                    border: `2px solid ${color.bg.app}`,
                   }}
                 >
                   {voteCount}
@@ -158,9 +164,9 @@ export function PlayerRing({
                     right: 1,
                     width: 10,
                     height: 10,
-                    borderRadius: "50%",
-                    background: player.isConnected ? "#2A9D8F" : "#666",
-                    border: "2px solid #0a0a0f",
+                    borderRadius: radius.pill,
+                    background: player.isConnected ? color.state.success : color.state.neutral,
+                    border: `2px solid ${color.bg.app}`,
                   }}
                 />
               )}
@@ -171,12 +177,12 @@ export function PlayerRing({
                   style={{
                     position: "absolute",
                     bottom: -20,
-                    fontSize: 10,
-                    color: "#aaa",
+                    fontSize: font.size.xs,
+                    color: color.text.muted,
                     whiteSpace: "nowrap",
-                    background: "rgba(0,0,0,0.7)",
-                    padding: "1px 5px",
-                    borderRadius: 4,
+                    background: color.scrim.light,
+                    padding: `1px ${space[1]}`,
+                    borderRadius: radius.sm,
                   }}
                 >
                   {player.role}
@@ -187,9 +193,13 @@ export function PlayerRing({
             {/* Name */}
             <span
               style={{
-                fontSize,
-                color: isDead ? "#555" : isMe ? "#fff" : "#ddd",
-                fontWeight: isMe ? 700 : 400,
+                fontSize: labelFontSize,
+                color: isDead
+                  ? color.text.muted
+                  : isMe
+                  ? color.text.primary
+                  : color.text.secondary,
+                fontWeight: isMe ? font.weight.bold : font.weight.regular,
                 textAlign: "center",
                 maxWidth: avatarSize + 20,
                 overflow: "hidden",
@@ -204,7 +214,15 @@ export function PlayerRing({
 
             {/* Ready dot (lobby) */}
             {player.isReady && (
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#A7C957", marginTop: -2 }} />
+              <div
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: radius.pill,
+                  background: color.state.success,
+                  marginTop: -2,
+                }}
+              />
             )}
           </motion.div>
         );
